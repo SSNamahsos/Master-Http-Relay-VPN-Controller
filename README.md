@@ -1,4 +1,4 @@
-# MasterHttpRelayVPN GUI 🚀
+# MasterHttpRelayVPN Controller 🚀
 
 **رابط کاربری گرافیکی برای MasterHttpRelayVPN**  
 با پشتیبانی از چندین Deployment ID، پینگ بلادرنگ، نصب خودکار گواهی CA و پروکسی SOCKS5 داخلی.
