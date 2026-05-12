@@ -1,234 +1,180 @@
-# MasterHttpRelayVPN Controller 🚀
+# MihaniRelay 🚀
+**رابط کاربری گرافیکی قدرتمند برای MihaniRelay (نسخه Go)**
 
-**رابط کاربری گرافیکی برای MasterHttpRelayVPN**  
-با پشتیبانی از چندین Deployment ID، پینگ بلادرنگ، نصب خودکار گواهی CA و پروکسی SOCKS5 داخلی.
+![GitHub License](https://img.shields.io/github/license/yourusername/mhrv-go)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)
+![Language](https://img.shields.io/badge/Language-Go%20%2B%20WebView-brightgreen)
 
----
-
-## 🧠 این برنامه چیست؟
-
-MasterHttpRelayVPN GUI یک نسخه‌ی گرافیکی از پروژه‌ی معروف [MasterHttpRelayVPN](
-https://github.com/masterking32/MasterHttpRelayVPN
-) است که به شما کمک می‌کند با چند کلیک پروکسی عبور از فیلترینگ را روی کامپیوتر خود راه‌اندازی کنید.  
-این برنامه با پنهان‌سازی ترافیک شما پشت دامنه‌های قابل اعتماد (مانند `www.google.com`) و استفاده از **Google Apps Script** به عنوان رله‌ی رایگان، به شما امکان دسترسی آزاد به اینترنت را می‌دهد.
-
-> **توجه:** این ابزار صرفاً برای اهداف آموزشی و پژوهشی ارائه شده است. مسئولیت استفاده از آن و رعایت قوانین محل زندگی بر عهده‌ی کاربر است.
+**رابط کاربری مدرن و سریع با پشتیبانی کامل از Google Apps Script، Cloudflare Worker، Xray/V2Ray و GitHub Codespace.**
 
 ---
 
-## ✨ ویژگی‌ها و امکانات
+## ✨ ویژگی‌های کلیدی
 
-- 🖥️ **رابط کاربری ساده و گرافیکی** – بدون نیاز به دانش خط فرمان  
-- 🌐 **پروکسی HTTP** (پیش‌فرض `127.0.0.1:8085`)  
-- 🔒 **پروکسی SOCKS5 داخلی** (پیش‌فرض `127.0.0.1:1080`) – برای تلگرام و سایر برنامه‌ها  
-- 🚀 **دامین فرانتینگ** با گوگل – ترافیک شما مانند ترافیک عادی گوگل دیده می‌شود  
-- ⚡ **پشتیبانی از حداکثر ۱۰ شناسه‌ی Deployment** – توزیع بار درخواست‌ها و افزایش سرعت  
-- 📊 **نمایشگر پینگ بلادرنگ** – بررسی سلامت اتصال هر ۵ ثانیه (بدون باز شدن پنجره‌ی CMD)  
-- 🎛️ **حالت Performance** – افزایش سرعت با کاهش لاگ‌ها و بهینه‌سازی Connection Pool  
-- 🔐 **نصب خودکار گواهی CA** – برای مشاهده‌ی بدون خطای سایت‌های HTTPS  
-- 📡 **اسکن IP گوگل** – یافتن سریع‌ترین IP فرانت  
-- 💾 **ذخیره‌سازی تنظیمات** در پوشه‌ی `Documents\MasterHttpRelayVPN`  
-- 🧵 **اجرای پایدار** – بدون قفل شدن رابط کاربری  
-- 🔄 **ادغام با V2Ray (اختیاری)** – قابلیت چین‌سازی پروکسی با لینک کانفیگ  
-
----
-
-## 🏗️ معماری (چگونه کار می‌کند؟)
-
-```
-مرورگر / تلگرام
-      │
-      ├─ HTTP Proxy (8085)  یا  SOCKS5 (1080)
-      ▼
-MasterHttpRelayVPN GUI
-      │
-      │ TLS به Google IP، SNI = 
-www.google.com
-
-      ▼
-گوگل (فیلتر فقط 
-www.google.com
- را می‌بیند)
-      │
-      │ Host: 
-script.google.com
- (داخل TLS)
-      ▼
-رله‌ی Apps Script (رایگان)
-      │
-      ▼
-مقصد واقعی (سایت دلخواه شما)
-```
+- **🌐 پروکسی HTTP + SOCKS5 داخلی** (پشتیبانی کامل از مرورگر، تلگرام، Discord و ...)
+- **🔄 Domain Fronting** با Google + Cloudflare Worker (ترافیک کاملاً پنهان)
+- **⚡ پشتیبانی از چندین Deployment ID** (تا ۲۰ رله همزمان + لود بالانسینگ هوشمند)
+- **📊 پینگ بلادرنگ** و نمایش وضعیت سلامت رله‌ها
+- **🔐 نصب خودکار گواهی CA** (MITM شفاف برای HTTPS)
+- **🚀 ادغام کامل Xray/V2Ray** (Vmess, Vless, Trojan, Shadowsocks, Reality, NaïveProxy)
+- **☁️ پشتیبانی از Cloudflare Worker** به عنوان رله جایگزین/مکمل
+- **🐙 GitHub Codespace Integration** (ساخت، اجرا و مدیریت مستقیم از داخل GitHub)
+- **🎨 تم و ظاهر قابل تغییر** (Dark/Light + تم‌های سفارشی)
+- **🌍 پشتیبانی از سه زبان** (فارسی • English • Finglish)
+- **📝 سطوح مختلف لاگ‌گیری** (Debug / Info / Warning / Error / Silent)
+- **🛡️ Exit Node Mode** (دور زدن حفاظت Cloudflare با تونلینگ هوشمند)
+- **💾 ذخیره‌سازی امن تنظیمات** + Import/Export
 
 ---
+
+## 🏗️ معماری جدید (Go)
+
+برنامه به‌طور کامل با زبان **Go** بازنویسی شده تا سرعت، پایداری و مصرف منابع بهینه شود.
+Browser / Telegram
+│
+HTTP Proxy (8085) ─────┐
+SOCKS5 Proxy (1080) ───┤
+▼
+MHRV-GO Core
+│
+┌──────────────┼────────────────────┐
+│              │                    │
+Google Fronting   Cloudflare Worker    Xray Core
+│              │                    │
+Apps Script       CF Worker Script     V2Ray Protocols
+text---
 
 ## 📦 پیش‌نیازها
 
-- **سیستم‌عامل:** Windows, macOS, Linux  
-- **پایتون 3.10 یا بالاتر**  
-- **یک حساب Google** (برای راه‌اندازی رله)  
-- **وابستگی‌های پایتون:** در فایل `requirements.txt` لیست شده‌اند  
-- **کتابخانه‌های اختیاری:**
-  - `cryptography` (برای پشتیبانی از HTTPS)
-  - `h2` (برای HTTP/2 و افزایش سرعت)
-  - `v2ray2proxy` (برای ادغام با V2Ray در صورت نیاز)
+- **Windows 10/11** (WebView2) | **Linux** | **macOS**
+- Go 1.22+
+- حساب Google (اختیاری)
+- حساب Cloudflare (اختیاری)
+- حساب GitHub (برای Codespace)
 
-می‌توانید با دستور زیر همه را نصب کنید:
+---
+
+## 🚀 راه‌اندازی سریع
+
+### ۱. رله Google Apps Script (اختیاری اما توصیه‌شده)
+1. به [script.google.com](https://script.google.com) بروید.
+2. پروژه جدید بسازید و محتوای `Code.gs` را paste کنید.
+3. `AUTH_KEY` را به رمز قوی تغییر دهید.
+4. Deploy → New deployment → Web app → Execute as: Me → Access: Anyone
+5. Deployment ID را کپی کنید.
+
+### ۲. رله Cloudflare Worker (جدید)
+1. به داشبورد Cloudflare Workers بروید.
+2. Worker جدید بسازید و اسکریپت موجود در مخزن (`worker.js`) را قرار دهید.
+3. Secret `AUTH_KEY` را تعریف کنید.
+4. URL Worker را در برنامه وارد کنید.
+
+### ۳. اجرای برنامه
+
 ```bash
-pip install -r requirements.txt
-```
+git clone https://github.com/yourusername/mhrv-go.git
+cd mhrv-go
+go run .
+یا فایل اجرایی آماده را از Releases دانلود کنید.
 
----
+🎛️ امکانات جدید
+ادغام Xray / V2Ray
 
-## 🚀 راهنمای شروع سریع
+افزودن کانفیگ‌های VMess, VLESS, Trojan, Shadowsocks, Reality
+تست پینگ خودکار کانفیگ‌ها
+اتصال هوشمند (Fallback)
+استفاده به‌عنوان Exit Node برای ترافیک غیر-HTTP
+پشتیبانی از NaïveProxy
 
-### ۱. راه‌اندازی رله (
-Code.gs
-) – فقط یک بار
+GitHub Codespace Mode
 
-1. وارد [Google Apps Script](
-https://script.google.com/
-) شوید و یک **پروژه‌ی جدید** بسازید.  
-2. کد موجود در فایل `Code.gs` (از همین مخزن) را به‌طور کامل در ویرایشگر جایگذاری کنید.  
-3. **مهم:** مقدار `AUTH_KEY` را به یک رمز قوی و شخصی تغییر دهید.  
-4. روی **Deploy → New deployment** کلیک کنید.  
-5. نوع را **Web app** انتخاب کرده و تنظیمات را بگذارید:  
-   - **Execute as:** Me  
-   - **Who has access:** Anyone  
-6. روی **Deploy** کلیک کنید و **Deployment ID** را کپی کنید.  
-7. این شناسه را در برنامه (فیلد Deployment ID) وارد کنید.  
-8. رمز `AUTH_KEY` همانی باشد که در کد تنظیم کردید.
+ورود با GitHub OAuth
+ساخت خودکار Codespace
+اجرای پروژه داخل Codespace
+مدیریت رله‌ها از طریق وب
 
-> 💡 **برای افزایش سرعت:** می‌توانید چندین بار همین مراحل را تکرار کنید و چند شناسه‌ی مختلف بسازید. برنامه از همه‌ی آن‌ها به صورت چرخشی استفاده می‌کند.
+حالت Exit Node
+ترافیک‌هایی که از Cloudflare Protection رد نمی‌شوند، به‌طور هوشمند به Exit Node (Xray) هدایت می‌شوند.
+Cloudflare Worker + Google Hybrid
+برنامه بهترین مسیر را بین Google Apps Script و Cloudflare Worker به‌صورت real-time انتخاب می‌کند.
+تنظیمات ظاهری و لاگ
 
-### ۲. دانلود و اجرا
+تغییر تم (Dark/Light/Custom)
+انتخاب زبان (فارسی، انگلیسی، فینگلیش)
+سطوح لاگ‌گیری قابل تنظیم
+فونت و اندازه متن قابل تغییر
 
-- مخزن را کلون کنید یا فایل EXE را از بخش Releases دریافت کنید.  
-- اگر از سورس استفاده می‌کنید، ابتدا وابستگی‌ها را نصب کنید:
-  ```bash
-  pip install -r requirements.txt
-  ```
-- سپس برنامه را اجرا کنید:
-  ```bash
-  MasterHttpRelayVPN.exe
-  ```
 
-### ۳. پر کردن تنظیمات
+📱 نحوه استفاده
+مرورگر:
 
-- **Deployment IDs:** حداقل یک شناسه‌ی Deployment را وارد کنید.  
-- **Auth Key:** رمز مشترکی که در `Code.gs` تنظیم کردید.  
-- **Google IP:** می‌توانید با دکمه‌ی **Scan** بهترین IP را پیدا کنید.  
-- **Listen Host:** معمولاً `127.0.0.1` (لوکال)  
-- **HTTP Port / SOCKS5 Port:** پورت‌های پیش‌فرض `8085` و `1080` مناسب هستند.
+HTTP Proxy: 127.0.0.1:8085
 
-### ۴. اتصال (Connect)
+تلگرام و برنامه‌ها:
 
-- دکمه‌ی **Connect** را بزنید.  
-- برنامه گواهی CA را در صورت نیاز نصب می‌کند (ممکن است نیاز به تأیید مدیر سیستم داشته باشد).  
-- پس از چند ثانیه، پیام `Health-check OK` در لاگ ظاهر می‌شود و نشانگر سبز می‌شود.
+SOCKS5: 127.0.0.1:1080
 
----
+افزونه‌های پیشنهادی:
 
-## 🌐 نحوه‌ی استفاده در مرورگر
+SwitchyOmega (Chrome/Edge)
+FoxyProxy (Firefox)
 
-پس از اتصال موفق، می‌توانید مرورگر خود را روی پروکسی تنظیم کنید:
 
-### فایرفاکس
-- به **Settings → General → Network Settings** بروید.  
-- **Manual proxy configuration** را انتخاب کنید.  
-- **HTTP Proxy:** `127.0.0.1` پورت `8085`  
-- تیک **Also use this proxy for HTTPS** را بزنید.  
-- روی OK کلیک کنید.
+🛠️ رفع مشکل رایج
 
-### کروم / اج
-- به تنظیمات پروکسی سیستم بروید:  
-  **Windows:** Settings → Network & Internet → Proxy → Manual  
-- آدرس: `127.0.0.1` پورت: `8085`  
-- ذخیره کنید.
 
-### افزونه‌های پیشنهادی
-- [SwitchyOmega](
-https://chrome.google.com/webstore/detail/proxy-switchyomega/
-) (کروم)  
-- [FoxyProxy](
-https://addons.mozilla.org/en-US/firefox/addon/foxyproxy-standard/
-) (فایرفاکس)
 
----
 
-## 📱 استفاده در تلگرام و برنامه‌های دیگر
 
-MasterHttpRelayVPN GUI یک پروکسی **SOCKS5** نیز بر روی `127.0.0.1:1080` ارائه می‌دهد (اگر تیک Enable SOCKS5 فعال باشد).  
-برای تنظیم آن در تلگرام دسکتاپ:
 
-1. به **Settings → Advanced → Connection Type** بروید.  
-2. **Use custom proxy** را انتخاب کنید.  
-3. نوع **SOCKS5**، آدرس `127.0.0.1` و پورت `1080` (یا پورت دلخواه).  
-4. ذخیره کنید.
 
-برنامه‌های دیگر مانند Discord یا مرورگرهای Tor نیز می‌توانند از این پروکسی SOCKS5 استفاده کنند.
 
----
 
-## 🔗 ادغام با V2Ray (اختیاری)
 
-اگر یک کانفیگ V2Ray دارید و می‌خواهید آن را با MasterHttpRelayVPN چین کنید:
 
-1. لینک کانفیگ خود (مثلاً `vmess://...`) را در فیلد **Config Link** در بخش V2Ray Integration وارد کنید.  
-2. دکمه‌ی **Test V2Ray** را بزنید تا از صحت آن مطمئن شوید.  
-3. پس از شروع برنامه، MasterHttpRelayVPN ترافیک TCP غیر HTTP را به خروجی SOCKS5 آن V2Ray هدایت می‌کند (پیش‌فرض `127.0.0.1:10808`).  
-4. بدین ترتیب تلگرام و برنامه‌های TCP از تونل V2Ray عبور می‌کنند.
 
-> اگر لینک ندارید، می‌توانید گزینه‌ی **Use built-in forwarder** را فعال کنید تا یک پروکسی مستقیم (بدون V2Ray) ایجاد شود.
 
----
 
-## 🛠️ رفع مشکلات رایج
 
-| مشکل | راه‌حل |
-|------|--------|
-| **خطای 502 Bad JSON** | شناسه‌ی Deployment را بررسی کنید. یک **New deployment** در Apps Script ایجاد کنید و ID جدید را جایگزین کنید. اطمینان حاصل کنید که `Auth Key` درست است. |
-| **کار نکردن HTTPS** | گواهی CA نصب نشده است. دکمه **Install CA Certificate** را بزنید و سپس مرورگر را کاملاً ببندید و باز کنید. |
-| **سرعت پایین** | چندین Deployment ID وارد کنید، **Performance Mode** را روشن کنید و بهترین Google IP را با Scan پیدا کنید. |
-| **پینگ -1 ms** | پروکسی درست کار نمی‌کند یا IP گوگل فیلتر است. از Scan برای پیدا کردن IP جدید استفاده کنید. |
-| **باز شدن پنجره CMD هنگام پینگ** | این مشکل در نسخه‌های جدید برطرف شده است. لطفاً آخرین نسخه را دریافت کنید. |
-| **خطای Certificate Error در مرورگر** | پس از نصب CA، مرورگر را کاملاً بسته و دوباره باز کنید. در فایرفاکس ممکن است نیاز به Import دستی گواهی باشد (Settings → Privacy → View Certificates). |
-| **تلگرام وصل نمی‌شود** | مطمئن شوید که پورت SOCKS5 (پیش‌فرض ۱۰۸۰) در تنظیمات تلگرام وارد شده است و Enable SOCKS5 فعال باشد. |
 
----
 
-## ⚙️ فایل‌های پروژه
 
-| فایل | توضیح |
-|------|--------|
-| `gui_app.py` | برنامه اصلی با رابط کاربری |
-| `proxy_server.py` | مدیریت اتصالات پروکسی |
-| `domain_fronter.py` | انجام Domain Fronting |
-| `h2_transport.py` | پشتیبانی HTTP/2 |
-| `mitm.py` | مدیریت گواهی‌های MITM |
-| `cert_installer.py` | نصب خودکار گواهی CA |
-| `ws.py` | پشتیبانی WebSocket |
-| `Code.gs` | رله‌ی Google Apps Script (باید جداگانه deploy شود) |
-| `config.example.json` | نمونه فایل تنظیمات |
-| `requirements.txt` | کتابخانه‌های مورد نیاز پایتون |
 
----
 
-## 📜 سلب مسئولیت (Disclaimer)
 
-این نرم‌افزار صرفاً برای **اهداف آموزشی و پژوهشی** ارائه شده است.  
-- توسعه‌دهندگان هیچ مسئولیتی در قبال استفاده‌های غیرمجاز، نقض قوانین محلی یا هرگونه خسارت ناشی از استفاده از این ابزار ندارند.  
-- کاربر موظف است پیش از استفاده، از مطابقت آن با قوانین کشور خود اطمینان حاصل کند.  
-- استفاده از سرویس‌های Google باید مطابق با شرایط و ضوابط گوگل انجام شود.
 
----
 
-## 🙏 تقدیر و تشکر
 
-این نسخه بر پایه‌ی پروژه‌ی اصلی **MasterHttpRelayVPN** ساخته شده است.  
-تشکر ویژه از [@masterking32](
-https://github.com/masterking32
-) برای ایده‌ی اولیه و کد Python.  
-با افتخار توسط **Faz Pad Studio** توسعه یافته است.
 
----
+
+
+
+
+مشکلراه‌حل502 Bad JSONبررسی Deployment ID و AUTH_KEYCertificate Errorنصب مجدد CA + بستن کامل مرورگرسرعت پاییناستفاده همزمان Google + Cloudflare + چندین IDCloudflare Blockفعال کردن Exit Node Modeپینگ بالاScan IP + Performance Mode
+
+📁 ساختار پروژه
+textmhrv-go/
+├── main.go
+├── go.mod
+├── go.sum
+├── index.html
+├── icon.ico
+│
+├── config/
+├── cert/
+├── mitm/
+├── fronter/
+├── proxy/
+├── gui/
+├── ws/
+
+📜 سلب مسئولیت
+این پروژه صرفاً برای اهداف آموزشی و تحقیقاتی توسعه یافته است.
+توسعه‌دهندگان هیچ مسئولیتی در قبال استفاده غیرقانونی یا نقض قوانین محلی ندارند. استفاده از سرویس‌های Google و Cloudflare باید مطابق با Terms of Service آنها باشد.
+
+🙏 تشکر و اعتبار
+
+پروژه اصلی: masterking32/MasterHttpRelayVPN
+بازنویسی و توسعه GUI پیشرفته: Faz Pad Studio
+
+ستاره ⭐ بده اگر مفید بود!
