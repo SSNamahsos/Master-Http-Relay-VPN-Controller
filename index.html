@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MihaniRelay</title>
+    <style>
+        /* ===== Variables ===== */
+        :root {
+            --bg: #202225;
+            --sidebar: #2f3136;
+            --main: #36393f;
+            --text: #dcddde;
+            --subtext: #8e9297;
+            --primary: #5865f2;
+            --danger: #ed4245;
+            --success: #3ba55d;
+            --border: #40444b;
+            --hover: #4f545c;
+            --input-bg: #40444b;
+            --channel-bg: #2f3136;
+            --channel-hover: #393c43;
+            --channel-active: #42464d;
+            --server-bg: #202225;
+            --server-hover: #5865f2;
+            --server-active: #5865f2;
+            --scrollbar-thumb: #202225;
+            --scrollbar-track: #2f3136;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --sidebar: #f2f3f5;
+            --main: #ffffff;
+            --text: #2e3338;
+            --subtext: #747f8d;
+            --primary: #c91c1c;
+            --danger: #c0392b;
+            --success: #27ae60;
+            --border: #d7d7d7;
+            --hover: #e3e5e8;
+            --input-bg: #ffffff;
+            --channel-bg: #f2f3f5;
+            --channel-hover: #e3e5e8;
+            --channel-active: #d4d7dc;
+            --server-bg: #e3e5e8;
+            --server-hover: #c91c1c;
+            --server-active: #c91c1c;
+            --scrollbar-thumb: #d7d7d7;
+            --scrollbar-track: #f2f3f5;
+        }
+
+        * { box-sizing:border-box; margin:0; padding:0; }
+        html, body { height:100%; font-family:'Segoe UI','Roboto',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; user-select:none; }
+
+        #loadingOverlay {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background: var(--bg); display:flex; align-items:center; justify-content:center;
+            z-index:9999; transition: opacity 0.3s;
+        }
+        #loadingOverlay.hidden { opacity:0; pointer-events:none; }
+        .loader {
+            width:48px; height:48px; border:5px solid var(--border);
+            border-bottom-color: var(--primary); border-radius:50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        #appContainer { height:100%; display:flex; flex-direction:column; }
+        .main-layout { flex:1; display:flex; overflow:hidden; }
+
+        .servers { width:72px; background:var(--server-bg); display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:8px; flex-shrink:0; border-right:1px solid var(--border); }
+        .server-icon { width:48px; height:48px; border-radius:50%; background:var(--main); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; font-size:20px; position:relative; }
+        .server-icon:hover { border-radius:16px; background:var(--server-hover); color:#fff; }
+        .server-icon.active { border-radius:16px; background:var(--server-active); color:#fff; }
+        .server-icon.connected { box-shadow: 0 0 15px 3px var(--success); }
+        .server-icon .tooltiptext { bottom:auto; top:110%; left:50%; transform:translateX(-50%); }
+
+        .sidebar { width:240px; background:var(--sidebar); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--border); }
+        .sidebar-header { padding:16px 12px; border-bottom:1px solid var(--border); font-weight:bold; font-size:16px; white-space:nowrap; }
+        .channel-list { flex:1; overflow-y:auto; padding:8px; }
+        .channel-item { padding:8px 12px; border-radius:4px; cursor:pointer; font-size:14px; margin-bottom:2px; transition:background 0.15s; }
+        .channel-item:hover { background:var(--channel-hover); }
+        .channel-item.active { background:var(--channel-active); color:#fff; }
+
+        .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .main-header { padding:12px 16px; border-bottom:1px solid var(--border); font-weight:bold; font-size:16px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+        .main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .settings-panel { flex-shrink:0; overflow-y:auto; padding:16px; }
+        .log-panel {
+            flex:1; background:var(--bg); border:1px solid var(--border); border-radius:4px; margin:10px; padding:10px;
+            font-family:'Consolas',monospace; font-size:12px; overflow-y:auto; white-space:pre-wrap; min-height:60px;
+            user-select: text; -webkit-user-select: text;
+        }
+
+        .stats-panel { width:240px; background:var(--sidebar); display:flex; flex-direction:column; flex-shrink:0; border-left:1px solid var(--border); }
+        .stats-header { padding:16px 12px; border-bottom:1px solid var(--border); font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; }
+        .stats-list { flex:1; overflow-y:auto; padding:8px; }
+        .stat-item { display:flex; justify-content:space-between; padding:8px 12px; font-size:13px; }
+        .stat-label { color:var(--subtext); }
+        .stat-value { font-weight:600; }
+
+        .form-row { display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+        .form-row label { min-width:90px; font-size:13px; color:var(--subtext); text-align:left; }
+        input, select, textarea, button { background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:8px 12px; font-family:inherit; font-size:13px; outline:none; }
+        input:focus, select:focus, textarea:focus { border-color:var(--primary); }
+        button { background:var(--primary); border:none; color:white; font-weight:600; cursor:pointer; transition:filter 0.15s; }
+        button:hover { filter:brightness(1.1); }
+        button:disabled { opacity:0.5; cursor:not-allowed; }
+        button.secondary { background:var(--hover); color:var(--text); }
+        button.danger { background:var(--danger); }
+
+        .toggle-switch { display:inline-block; width:40px; height:20px; background:var(--border); border-radius:20px; position:relative; cursor:pointer; vertical-align:middle; }
+        .toggle-switch input { display:none; }
+        .toggle-switch .slider { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:white; transition:0.2s; }
+        .toggle-switch input:checked + .slider { transform:translateX(20px); background:var(--primary); }
+
+        .tooltip { position:relative; }
+        .tooltiptext { visibility:hidden; background:black; color:white; padding:4px 8px; border-radius:4px; position:absolute; bottom:125%; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:11px; z-index:99; pointer-events:none; }
+        .tooltip:hover .tooltiptext { visibility:visible; }
+
+        .badge { width:10px; height:10px; border-radius:50%; }
+        .badge.green { background:var(--success); }
+        .badge.red { background:var(--danger); }
+        .badge.gray { background:#747f8d; }
+
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:var(--scrollbar-track); }
+        ::-webkit-scrollbar-thumb { background:var(--scrollbar-thumb); border-radius:3px; }
+
+        .account-container { max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; padding:8px; margin-bottom:8px; }
+
+        .show-hide-btn { background:none; border:none; color:var(--subtext); cursor:pointer; font-size:14px; padding:0 4px; }
+        .show-hide-btn:hover { color:var(--text); }
+
+        #infoOverlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px);
+            z-index: 10000; align-items: center; justify-content: center;
+        }
+        #infoOverlay.active { display: flex; }
+        .info-box {
+            background: var(--main); border: 1px solid var(--border); border-radius: 8px;
+            padding: 24px; max-width: 500px; width: 90%; color: var(--text);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .info-box h3 { margin-bottom: 12px; }
+        .info-box p { font-size: 13px; line-height: 1.6; }
+        .info-box button { margin-top: 16px; float: right; }
+    </style>
+</head>
+<body>
+<div id="loadingOverlay"><div class="loader"></div></div>
+
+<div id="appContainer" style="display:none;">
+    <div class="main-layout">
+        <div class="servers" id="serverList">
+            <div class="server-icon active" data-mode="welcome"><span>🏠</span><span class="tooltiptext">Home</span></div>
+            <div class="server-icon" data-mode="google_only"><span>🌐</span><span class="tooltiptext">Google-Only Mode</span></div>
+            <div class="server-icon" data-mode="apps_script"><span>📜</span><span class="tooltiptext">Apps Script Relay</span></div>
+            <div class="server-icon" data-mode="worker"><span>☁️</span><span class="tooltiptext">Cloudflare Worker</span></div>
+            <div class="server-icon" data-mode="exit_node"><span>🔐</span><span class="tooltiptext">Exit Node</span></div>
+            <div class="server-icon" data-mode="v2ray"><span>🚀</span><span class="tooltiptext">V2Ray Configs</span></div>
+            <div class="server-icon" data-mode="github"><span>🐙</span><span class="tooltiptext">GitHub Codespaces</span></div>
+            <div class="server-icon" id="settingsBtn"><span>⚙️</span><span class="tooltiptext">Settings</span></div>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header" id="sidebarHeader">Home</div>
+            <div class="channel-list" id="channelList"></div>
+        </div>
+
+        <div class="main">
+            <div class="main-header">
+                <span id="mainTitle">Welcome</span>
+                <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:6px;">
+                        <span id="sysProxyLabel">System Proxy</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="systemProxyCheck" onchange="toggleSystemProxy(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                    <button id="startBtn" onclick="startProxy()">▶ <span data-lang="connect">Connect</span></button>
+                    <button id="stopBtn" class="danger" onclick="stopProxy()" disabled>⏹ <span data-lang="disconnect">Disconnect</span></button>
+                </div>
+                <span id="pingLabel" style="color:var(--subtext); font-size:13px;">Ping: - ms</span>
+                <div class="badge" id="statusDot" style="background:var(--danger);"></div>
+            </div>
+            <div class="main-content">
+                <div class="settings-panel" id="settingsPanel"></div>
+                <div class="log-panel" id="logArea"></div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stats-header" data-lang="liveStats">Live Stats</div>
+            <div class="stats-list">
+                <div class="stat-item"><span class="stat-label" data-lang="requests">Requests</span><span class="stat-value" id="reqCount">0</span></div>
+                <div class="stat-item"><span class="stat-label" data-lang="active">Active</span><span class="stat-value" id="activeCount">0</span></div>
+                <div class="stat-item"><span class="stat-label" data-lang="bytes">Bytes</span><span class="stat-value" id="byteCount">0</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="infoOverlay">
+    <div class="info-box">
+        <h3 id="infoTitle"></h3>
+        <p id="infoBody"></p>
+        <button onclick="closeInfo()">Close</button>
+    </div>
+</div>
+
+<script>
+    // ========== LANGUAGE PACK ==========
+    let LANG = localStorage.getItem('lang') || 'fa';
+    const texts = {
+        fa: {
+            general: 'عمومی', advanced: 'پیشرفته', logs: 'لاگ‌ها', accounts: 'اکانت‌ها',
+            fronting: 'Fronting Groups', workerCfg: 'تنظیمات Worker', exitCfg: 'Exit Node',
+            appearance: 'ظاهر', language: 'زبان', ca: 'گواهی CA', about: 'درباره',
+            save: 'ذخیره', scan: 'اسکن', connect: 'اتصال', disconnect: 'قطع',
+            ping: 'پینگ', status: 'وضعیت', darkTheme: 'حالت تیره', lightTheme: 'حالت روشن',
+            copyWorker: 'کپی worker.js', copyGS: 'کپی Code.gs', multiAccount: 'حالت چند اکانته',
+            systemProxy: 'پروکسی سیستم', liveStats: 'آمار زنده', requests: 'درخواست‌ها',
+            active: 'فعال', bytes: 'بایت', googleIP: 'Google IP:', frontDomain: 'دامنه Front:',
+            listenHost: 'میزبان Listen:', httpPort: 'پورت HTTP:', authKey: 'کلید Auth:',
+            scriptID: 'شناسه اسکریپت:', addAccount: '+ افزودن اکانت', addID: '+ افزودن شناسه',
+            removeID: '- حذف شناسه', removeAccount: '- حذف اکانت', healthCheck: 'بررسی سلامت',
+            copyCode: 'کپی کد', testConnection: 'تست اتصال', installCA: 'نصب گواهی CA',
+            checkCAStatus: 'بررسی وضعیت CA', caInstalled: 'گواهی CA نصب شده است',
+            caNotInstalled: 'گواهی CA نصب نشده است', caInstallSuccess: 'گواهی CA با موفقیت نصب شد. مرورگر خود را ببندید و دوباره باز کنید.',
+            themeLabel: 'تم فعلی:', show: 'نمایش', hide: 'مخفی', healthSuccess: 'تست با موفقیت انجام شد',
+            healthFail: 'تست ناموفق', responseTime: 'زمان پاسخ', statusCode: 'کد وضعیت',
+            targetIP: 'IP مقصد', errorDetails: 'جزئیات خطا', logLevel: 'سطح لاگ',
+            infoGeneral: 'تنظیمات عمومی پروکسی: IP گوگل برای فرانتینگ، دامنه نمایشی (SNI)، آدرس و پورت پروکسی.',
+            infoAdvanced: 'گزینه‌های پیشرفته: Anti‑Ban برای جلوگیری از مسدودیت حساب، عبور اجباری YouTube از رله، اشتراک‌گذاری LAN، و حالت Performance.',
+            infoAccounts: 'مدیریت اکانت‌های Google Apps Script: کلید احراز هویت و شناسه‌های Deployment. چند اکانته برای load balancing.',
+            infoFronting: 'Fronting Groups: گروه‌های SNI rewrite برای دور زدن CDNهای دیگر (Vercel, Fastly و غیره).',
+            infoWorker: 'تنظیمات Cloudflare Worker: لینک Worker و کلید upstream.',
+            infoExit: 'Exit Node: اتصال از طریق یک رله خارجی برای سایت‌های محافظت‌شده با Cloudflare.',
+            infoAppearance: 'انتخاب پوسته تیره یا روشن.',
+            infoLanguage: 'انتخاب زبان رابط کاربری.',
+            infoCA: 'نصب گواهی CA برای باز کردن HTTPS بدون خطا.',
+            infoAbout: 'اطلاعات برنامه.',
+            infoLog: 'تنظیم سطح لاگ (نمایش جزئیات بیشتر یا کمتر).',
+            welcome: 'خوش آمدید',
+            welcomeDesc: 'به MihaniRelay خوش آمدید! این ابزار به شما کمک می‌کند تا با استفاده از Google Apps Script و تکنیک Domain Fronting، سانسور اینترنت را دور بزنید.',
+            features: 'ویژگی‌ها',
+            featuresDesc: '• پروکسی HTTP/SOCKS5 داخلی\n• گوگل‌آنلی (بدون نیاز به Apps Script)\n• رله از طریق Apps Script\n• حالت چند اکانته\n• Fronting Groups\n• Exit Node\n• نصب خودکار گواهی CA\n• رابط کاربری مدرن',
+            gettingStarted: 'شروع سریع',
+            gettingStartedDesc: '۱. یک اکانت Google Apps Script بسازید (دکمه «ساخت اسکریپت»).\n۲. شناسه Deployment و کلید Auth را در بخش Apps Script Relay وارد کنید.\n۳. روی Connect بزنید.\n۴. مرورگر خود را روی پروکسی تنظیم کنید (127.0.0.1:8085).',
+            youtubeHelp: 'چگونه ویدیوهای YouTube را تماشا کنیم؟',
+            youtubeHelpDesc: 'برای تماشای ویدیوهای YouTube باید از حالت Apps Script Relay استفاده کنید یا گزینه "Force YouTube via relay" را در بخش پیشرفته فعال کنید. توجه: پخش ویدیو ممکن است کند باشد.',
+            aboutApp: 'درباره برنامه',
+            aboutAppDesc: 'MihaniRelay توسط Faz Pad Studio توسعه یافته است.',
+            openScriptSite: 'ساخت اسکریپت (script.google.com)',
+            githubLogin: 'ورود به GitHub',
+            githubLogout: 'خروج',
+            githubFork: 'فورک کردن مخزن',
+            githubCreate: 'ساخت Codespace',
+            githubStop: 'توقف Codespace',
+            githubDelete: 'حذف Codespace',
+            githubXrayStart: 'اتصال (شروع پروکسی)',
+            githubXrayStop: 'قطع اتصال',
+            githubDisabled: 'GitHub در تنظیمات غیرفعال است.',
+            githubStatus: 'وضعیت Codespace',
+            githubVless: 'لینک VLESS',
+            githubOpen: 'باز کردن Codespace در مرورگر',
+            v2rayPage: 'تنظیمات V2Ray',
+            noConfig: 'هیچ کانفیگی اینجا نیست یکی اضافه کنید',
+            addConfig: 'افزودن کانفیگ',
+            pasteConfig: 'چسباندن کانفیگ',
+            pingAll: 'پینگ همه',
+            logLimit: 'محدودیت لاگ (کاراکتر)',
+            logLevelSetting: 'سطح لاگ (جزئیات)',
+            low: 'کم',
+            normal: 'معمولی',
+            high: 'زیاد',
+            unlimited: 'نامحدود',
+            infoV2Ray: 'مدیریت کانفیگ‌های V2Ray، Shadowsocks و NPVT. می‌توانید کانفیگ جدید بسازید یا کپی کنید.',
+            infoGitHub: 'مدیریت Codespace گیت‌هاب برای استفاده به عنوان پروکسی. ابتدا باید لاگین کنید و مخزن را فورک کنید.',
+        },
+        en: {
+            general: 'General', advanced: 'Advanced', logs: 'Logs', accounts: 'Accounts',
+            fronting: 'Fronting Groups', workerCfg: 'Worker Config', exitCfg: 'Exit Node',
+            appearance: 'Appearance', language: 'Language', ca: 'CA Certificate', about: 'About',
+            save: 'Save', scan: 'Scan', connect: 'Connect', disconnect: 'Disconnect',
+            ping: 'Ping', status: 'Status', darkTheme: 'Dark', lightTheme: 'Light',
+            copyWorker: 'Copy worker.js', copyGS: 'Copy Code.gs', multiAccount: 'Multi-Account Mode',
+            systemProxy: 'System Proxy', liveStats: 'Live Stats', requests: 'Requests',
+            active: 'Active', bytes: 'Bytes', googleIP: 'Google IP:', frontDomain: 'Front Domain:',
+            listenHost: 'Listen Host:', httpPort: 'HTTP Port:', authKey: 'Auth Key:',
+            scriptID: 'Script ID:', addAccount: '+ Add Account', addID: '+ Add ID',
+            removeID: '- Remove ID', removeAccount: '- Remove Account', healthCheck: 'Health Check',
+            copyCode: 'Copy Code', testConnection: 'Test Connection', installCA: 'Install CA Certificate',
+            checkCAStatus: 'Check CA Status', caInstalled: 'CA certificate is installed',
+            caNotInstalled: 'CA certificate is not installed', caInstallSuccess: 'CA certificate installed successfully. Restart your browser.',
+            themeLabel: 'Current theme:', show: 'Show', hide: 'Hide', healthSuccess: 'Test succeeded',
+            healthFail: 'Test failed', responseTime: 'Response time', statusCode: 'Status code',
+            targetIP: 'Target IP', errorDetails: 'Error details', logLevel: 'Log Level',
+            infoGeneral: 'General proxy settings: Google fronting IP, displayed domain (SNI), listen address and port.',
+            infoAdvanced: 'Advanced options: Anti‑Ban to avoid account ban, force YouTube via relay, LAN sharing, Performance mode.',
+            infoAccounts: 'Manage Google Apps Script accounts: Auth key and Deployment IDs. Multi‑account for load balancing.',
+            infoFronting: 'Fronting Groups: SNI rewrite groups for bypassing other CDNs (Vercel, Fastly, etc.).',
+            infoWorker: 'Cloudflare Worker settings: Worker URL and upstream key.',
+            infoExit: 'Exit Node: Route via an external relay for Cloudflare‑protected sites.',
+            infoAppearance: 'Choose dark or light theme.',
+            infoLanguage: 'Select UI language.',
+            infoCA: 'Install CA certificate to browse HTTPS without errors.',
+            infoAbout: 'About this application.',
+            infoLog: 'Set log level (more or less detail).',
+            welcome: 'Welcome',
+            welcomeDesc: 'Welcome to MihaniRelay! This tool helps you bypass internet censorship using Google Apps Script and Domain Fronting.',
+            features: 'Features',
+            featuresDesc: '• Built-in HTTP/SOCKS5 proxy\n• Google-Only mode (no Apps Script needed)\n• Apps Script relay\n• Multi‑account mode\n• Fronting Groups\n• Exit Node\n• Automatic CA certificate installation\n• Modern UI',
+            gettingStarted: 'Getting Started',
+            gettingStartedDesc: '1. Create a Google Apps Script (use the "Create Script" button).\n2. Enter your Deployment ID and Auth Key in the Apps Script Relay section.\n3. Click Connect.\n4. Set your browser proxy to 127.0.0.1:8085.',
+            youtubeHelp: 'How to watch YouTube videos?',
+            youtubeHelpDesc: 'To watch YouTube videos, you must use the Apps Script Relay mode or enable "Force YouTube via relay" in the Advanced section. Note: video playback may be slow.',
+            aboutApp: 'About',
+            aboutAppDesc: 'MihaniRelay is developed by Faz Pad Studio.',
+            openScriptSite: 'Open script.google.com',
+            githubLogin: 'Login to GitHub',
+            githubLogout: 'Logout',
+            githubFork: 'Fork Repository',
+            githubCreate: 'Create Codespace',
+            githubStop: 'Stop Codespace',
+            githubDelete: 'Delete Codespace',
+            githubXrayStart: 'Connect (Start Proxy)',
+            githubXrayStop: 'Disconnect',
+            githubDisabled: 'GitHub integration is disabled in settings.',
+            githubStatus: 'Codespace Status',
+            githubVless: 'VLESS Link',
+            githubOpen: 'Open Codespace in browser',
+            v2rayPage: 'V2Ray Configurations',
+            noConfig: 'there is no config here add one',
+            addConfig: 'Add Config',
+            pasteConfig: 'Paste Config',
+            pingAll: 'Ping All',
+            logLimit: 'Log Limit (Chars)',
+            logLevelSetting: 'Log Level (Detail)',
+            low: 'Low',
+            normal: 'Normal',
+            high: 'High',
+            unlimited: 'Unlimited',
+            infoV2Ray: 'Manage V2Ray, Shadowsocks and NPVT configurations. You can add or paste new configs.',
+            infoGitHub: 'Manage GitHub Codespaces to use as a proxy. You need to login and fork the repository first.',
+        },
+        finglish: {
+            general: 'General', advanced: 'Advanced', logs: 'Logs', accounts: 'Accounts',
+            fronting: 'Fronting Groups', workerCfg: 'Worker Config', exitCfg: 'Exit Node',
+            appearance: 'Zaaher', language: 'Zaban', ca: 'Govahi CA', about: 'Darbareh',
+            save: 'Zakhireh', scan: 'Scan', connect: 'Etesal', disconnect: 'Ghat',
+            ping: 'Ping', status: 'Vaziyat', darkTheme: 'Haalate Tireh', lightTheme: 'Haalate Roshan',
+            copyWorker: 'Kopi worker.js', copyGS: 'Kopi Code.gs', multiAccount: 'Haalate Chand Akante',
+            systemProxy: 'Proxy System', liveStats: 'Aamare Zendeh', requests: 'Darkhast-ha',
+            active: 'Faal', bytes: 'Byte', googleIP: 'Google IP:', frontDomain: 'Damaneh Front:',
+            listenHost: 'Mizban Listen:', httpPort: 'Port HTTP:', authKey: 'Kelid Auth:',
+            scriptID: 'Shenaseh Script:', addAccount: '+ Afzoodane Akant', addID: '+ Afzoodane Shenaseh',
+            removeID: '- Hazfe Shenaseh', removeAccount: '- Hazfe Akant', healthCheck: 'Barresi Salamat',
+            copyCode: 'Kopi Kod', testConnection: 'Teste Etesal', installCA: 'Nasbe Govahi CA',
+            checkCAStatus: 'Barresi Vaziyate CA', caInstalled: 'Govahi CA nasb shodeh ast',
+            caNotInstalled: 'Govahi CA nasb nashodeh ast', caInstallSuccess: 'Govahi CA ba movafaghiyat nasb shod. Mororgare khod ra bebandid va dobare baz konid.',
+            themeLabel: 'Theme feli:', show: 'Namayesh', hide: 'Makhfi', healthSuccess: 'Test ba movafaghiyat anjam shod',
+            healthFail: 'Test namovafagh', responseTime: 'Zamane pasokh', statusCode: 'Kode vaziyat',
+            targetIP: 'IP maghsad', errorDetails: 'Joz-iyate khata', logLevel: 'Sat-he Log',
+            infoGeneral: 'Tanzimate omoomi proxy: IP google baraye fronting, damaneh namayeshi (SNI), aadress va porte proxy.',
+            infoAdvanced: 'Gozineh-haye pishrafteh: Anti‑Ban baraye jelogiri az masdoodiyate hesab, oboore ejbari YouTube az relay, eshterak-gozari LAN, va haalate Performance.',
+            infoAccounts: 'Modiriyate akant-haye Google Apps Script: Kelide ehraz hoviyat va shenaseh-haye Deployment. Chand akante baraye load balancing.',
+            infoFronting: 'Fronting Groups: Gorooh-haye SNI rewrite baraye dor zadan CDN-haye diger (Vercel, Fastly va gheire).',
+            infoWorker: 'Tanzimate Cloudflare Worker: Linke Worker va kelide upstream.',
+            infoExit: 'Exit Node: Etesal az tarighe yek relay khareji baraye site-haye mohafezat-shodeh ba Cloudflare.',
+            infoAppearance: 'Entekhabe pooste tireh ya roshan.',
+            infoLanguage: 'Entekhabe zabane rabet karbari.',
+            infoCA: 'Nasbe govahi CA baraye baz kardane HTTPS bedoone khata.',
+            infoAbout: 'Etela-ate barnameh.',
+            infoLog: 'Tanzime sat-he log (namayeshe joz-iyate bishtar ya kamtar).',
+            welcome: 'Khosh Amadid',
+            welcomeDesc: 'Be MihaniRelay khosh amadid! In abzare be shoma komak mikonad ta ba estefadeh az Google Apps Script va technike Domain Fronting, sansore internet ra dor bezanid.',
+            features: 'Vizhegi-ha',
+            featuresDesc: '• Proxy HTTP/SOCKS5 dakheli\n• Google-Only (bedoone niyaz be Apps Script)\n• Relay az tarighe Apps Script\n• Haalate Chand Akante\n• Fronting Groups\n• Exit Node\n• Nasbe khodkare govahi CA\n• Rabet karbari modern',
+            gettingStarted: 'Shorooe Sari',
+            gettingStartedDesc: '1. Yek akante Google Apps Script besazid (dokmeh «Sakhte Script»).\n2. Shenaseh Deployment va kelid Auth ra dar bakhshe Apps Script Relay vared konid.\n3. Rooye Connect bezanid.\n4. Mororgare khod ra rooye proxy tanzim konid (127.0.0.1:8085).',
+            youtubeHelp: 'Chegooneh videohaye YouTube ra tamasha konim?',
+            youtubeHelpDesc: 'Baraye tamashaye videohaye YouTube bayad az haalate Apps Script Relay estefadeh konid ya gozineh "Force YouTube via relay" ra dar bakhshe pishrafteh faal konid. Tavajoh: pakhshe video momken ast kand bashad.',
+            aboutApp: 'Darbareh Barnameh',
+            aboutAppDesc: 'MihaniRelay tavasote Faz Pad Studio toseeh yafteh ast.',
+            openScriptSite: 'Sakhte Script (script.google.com)',
+            githubLogin: 'Vorood be GitHub',
+            githubLogout: 'Khorooj',
+            githubFork: 'Fork kardane makhzan',
+            githubCreate: 'Sakhte Codespace',
+            githubStop: 'Toghofe Codespace',
+            githubDelete: 'Hazfe Codespace',
+            githubXrayStart: 'Etesal (Shorooe Proxy)',
+            githubXrayStop: 'Ghat-e Etesal',
+            githubDisabled: 'GitHub dar tanzimat gheire faal ast.',
+            githubStatus: 'Vaziyate Codespace',
+            githubVless: 'Linke VLESS',
+            githubOpen: 'Baz kardane Codespace dar mororgar',
+            v2rayPage: 'Tanzimate V2Ray',
+            noConfig: 'Hich configi inja nist yeki ezafe konid',
+            addConfig: 'Afzoodane Config',
+            pasteConfig: 'Paste Config',
+            pingAll: 'Ping Hameh',
+            logLimit: 'Mahdoodiyate Log (Character)',
+            logLevelSetting: 'Sat-he Log (Joz-iyat)',
+            low: 'Kam',
+            normal: 'Mamooli',
+            high: 'Ziyad',
+            unlimited: 'Namahdood',
+            infoV2Ray: 'Modiriyate config-haye V2Ray, Shadowsocks va NPVT. Mitavanid config-e jadid besazid ya paste konid.',
+            infoGitHub: 'Modiriyate GitHub Codespace baraye estefadeh be onvane proxy. Aval bayad login konid va makhzan ra fork konid.',
+        }
+    };
+
+    // ========== GLOBALS ==========
+    let ws,
+        darkTheme = true,
+        currentMode = 'welcome',
+        currentSection = 'general';
+    let config = {};
+    let accounts = [];
+    let systemProxyOn = false;
+    let uiSettings = { theme: 'dark', language: 'fa', logLevel: 'INFO' };
+    let isProxyRunning = false;
+    let lastPing = -1;
+    let runningMode = '';
+
+    // ========== WEBSOCKET ==========
+    function connectWS() {
+        ws = new WebSocket('ws://127.0.0.1:' + location.port + '/ws');
+        ws.onmessage = (e) => {
+            const m = JSON.parse(e.data);
+            if (m.type === 'status') {
+                isProxyRunning = m.running;
+                lastPing = m.ping;
+                runningMode = m.mode || '';
+                updateStatusDisplay();
+            } else if (m.type === 'log') appendLog(m.text);
+        };
+        ws.onclose = () => setTimeout(connectWS, 2000);
+    }
+
+    function updateStatusDisplay() {
+        const dot = document.getElementById('statusDot');
+        dot.style.background = isProxyRunning ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('pingLabel').textContent = (LANG === 'fa' ? 'پینگ: ' : 'Ping: ') + (lastPing > 0 ? lastPing + ' ms' : '- ms');
+        document.getElementById('startBtn').disabled = isProxyRunning;
+        document.getElementById('stopBtn').disabled = !isProxyRunning;
+
+        document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('connected'));
+        if (isProxyRunning && runningMode) {
+            const activeIcon = document.querySelector(`.server-icon[data-mode="${runningMode}"]`);
+            if (activeIcon) activeIcon.classList.add('connected');
+        }
+    }
+
+    function appendLog(text) {
+        const log = document.getElementById('logArea');
+        log.textContent += text;
+        
+        let limit = config.LogLimitChars || 15000;
+        if (config.LogLevelSetting === 'Low') limit = 5000;
+        else if (config.LogLevelSetting === 'High') limit = 50000;
+        else if (config.LogLevelSetting === 'Unlimited') limit = 10000000;
+
+        if (log.textContent.length > limit) {
+            log.textContent = log.textContent.slice(log.textContent.length - Math.floor(limit * 0.8));
+        }
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function clearLog() { document.getElementById('logArea').textContent = ''; }
+
+    // ========== LOADING SEQUENCE ==========
+    window.addEventListener('load', async () => {
+        await loadUISettings();
+        applyLanguage();
+        await Promise.all([loadConfig(), waitForWS()]);
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        document.getElementById('appContainer').style.display = 'flex';
+        if (config.Mode && config.Mode !== 'welcome' && getModeSections(config.Mode)) {
+            currentMode = config.Mode;
+            const activeIcon = document.querySelector(`.server-icon[data-mode="${config.Mode}"]`);
+            if (activeIcon) {
+                document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
+                activeIcon.classList.add('active');
+            }
+        }
+        rebuildChannelList();
+    });
+
+    function waitForWS() {
+        return new Promise(resolve => {
+            connectWS();
+            const check = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) { clearInterval(check); resolve(); }
+            }, 100);
+            setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+        });
+    }
+
+    function applyLanguage() {
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (texts[LANG] && texts[LANG][key]) el.textContent = texts[LANG][key];
+        });
+    }
+
+    async function loadUISettings() {
+        try {
+            const r = await fetch('/api/settings');
+            const s = await r.json();
+            if (s.theme) {
+                darkTheme = (s.theme === 'dark');
+                document.body.setAttribute('data-theme', darkTheme ? 'dark' : 'light');
+            }
+            if (s.language) {
+                localStorage.setItem('lang', s.language);
+                LANG = s.language;
+            }
+            if (s.logLevel) uiSettings.logLevel = s.logLevel;
+        } catch (e) {}
+    }
+
+    async function saveUISettings() {
+        const theme = darkTheme ? 'dark' : 'light';
+        const lang = LANG;
+        const logLevel = uiSettings.logLevel;
+        await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({theme, language: lang, logLevel})
+        });
+    }
+
+    // ========== MODES DEFINITION ==========
+    function getModeSections(key) {
+        const t = texts[LANG];
+        const allModes = {
+            welcome: {
+                name: t.welcome || 'Home',
+                sections: {
+                    welcome: {name: t.welcome || 'Welcome', render: renderWelcome, info: t.welcomeDesc},
+                    features: {name: t.features || 'Features', render: renderFeatures, info: t.featuresDesc},
+                    gettingStarted: {name: t.gettingStarted || 'Getting Started', render: renderGettingStarted, info: t.gettingStartedDesc},
+                    youtube: {name: t.youtubeHelp || 'YouTube Help', render: renderYoutubeHelp, info: t.youtubeHelpDesc},
+                    about: {name: t.aboutApp || 'About', render: renderAboutApp, info: t.aboutAppDesc}
+                }
+            },
+            google_only: {
+                name: 'Google-Only Mode',
+                sections: {
+                    general: {name: t.general, render: renderGeneralSettings, info: t.infoGeneral},
+                    advanced: {name: t.advanced, render: renderAdvancedOptions, info: t.infoAdvanced},
+                    logs: {name: t.logs, render: renderLogSettings, info: t.infoLog}
+                }
+            },
+            apps_script: {
+                name: 'Apps Script Relay',
+                sections: {
+                    general: {name: t.general, render: renderGeneralSettings, info: t.infoGeneral},
+                    accounts: {name: t.accounts, render: renderAccounts, info: t.infoAccounts},
+                    advanced: {name: t.advanced, render: renderAdvancedOptions, info: t.infoAdvanced},
+                    fronting: {name: t.fronting, render: renderFrontingGroups, info: t.infoFronting},
+                    logs: {name: t.logs, render: renderLogSettings, info: t.infoLog}
+                }
+            },
+            worker: {
+                name: 'Cloudflare Worker',
+                sections: {
+                    general: {name: t.general, render: renderGeneralSettings, info: t.infoGeneral},
+                    worker: {name: t.workerCfg, render: renderWorkerConfig, info: t.infoWorker},
+                    advanced: {name: t.advanced, render: renderAdvancedOptions, info: t.infoAdvanced},
+                    logs: {name: t.logs, render: renderLogSettings, info: t.infoLog}
+                }
+            },
+            exit_node: {
+                name: 'Exit Node',
+                sections: {
+                    config: {name: t.exitCfg, render: renderExitNode, info: t.infoExit},
+                    logs: {name: t.logs, render: renderLogSettings, info: t.infoLog}
+                }
+            },
+            v2ray: {
+                name: t.v2rayPage,
+                sections: {
+                    configs: {name: t.v2rayPage, render: renderV2RayPage, info: t.infoV2Ray}
+                }
+            },
+            github: {
+                name: "GitHub Codespaces",
+                sections: {
+                    github: {name: "GitHub Codespaces", render: renderGitHubSection, info: t.infoGitHub}
+                }
+            },
+            settings: {
+                name: 'Settings',
+                sections: {
+                    appearance: {name: t.appearance, render: renderAppearance, info: t.infoAppearance},
+                    language: {name: t.language, render: renderLanguage, info: t.infoLanguage},
+                    ca: {name: t.ca, render: renderCASection, info: t.infoCA},
+                    about: {name: t.about, render: renderAbout, info: t.infoAbout},
+                    logs: {name: t.logs, render: renderLogSettings, info: t.infoLog}
+                }
+            }
+        };
+        return allModes[key];
+    }
+
+    // ========== SERVER ICONS ==========
+    document.getElementById('serverList').addEventListener('click', async (e) => {
+        const icon = e.target.closest('.server-icon');
+        if (!icon) return;
+
+        const mode = icon.dataset.mode;
+        if (icon.id === 'settingsBtn') {
+            currentMode = 'settings';
+            document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
+            icon.classList.add('active');
+            rebuildChannelList();
+            updateStatusDisplay();
+            return;
+        }
+
+        if (mode) {
+            if (mode !== currentMode) clearLog();
+            currentMode = mode;
+            document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
+            icon.classList.add('active');
+            config.Mode = mode;
+
+            // اگر روی آیکون GitHub کلیک کرد، مستقیم به بخش GitHub در Settings برو
+            if (icon.dataset.section) {
+                currentSection = icon.dataset.section;
+            } else {
+                currentSection = 'general'; // یا اولین بخش
+            }
+
+            try {
+                if (mode !== 'welcome') {
+                    await loadConfig();
+                } else {
+                    config = {};
+                }
+            } catch (err) {
+                console.error('loadConfig failed', err);
+            } finally {
+                rebuildChannelList();
+                updateStatusDisplay();
+            }
+        }
+    });
+
+    function rebuildChannelList() {
+        const modeObj = getModeSections(currentMode);
+        if (!modeObj) return;
+        document.getElementById('sidebarHeader').textContent = modeObj.name;
+        const list = document.getElementById('channelList');
+        list.innerHTML = '';
+        const sections = modeObj.sections;
+        if (!sections[currentSection] || (currentMode !== 'welcome' && currentSection === 'welcome')) {
+            currentSection = Object.keys(sections)[0];
+        }
+        Object.entries(sections).forEach(([key, section]) => {
+            const div = document.createElement('div');
+            div.className = 'channel-item' + (currentSection === key ? ' active' : '');
+            div.textContent = section.name;
+            div.onclick = () => {
+                currentSection = key;
+                document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+                renderContent();
+            };
+            list.appendChild(div);
+        });
+        renderContent();
+    }
+
+    function renderContent() {
+        const modeObj = getModeSections(currentMode);
+        const section = modeObj.sections[currentSection];
+        if (!section) return;
+        document.getElementById('mainTitle').textContent = section.name;
+        const panel = document.getElementById('settingsPanel');
+        panel.innerHTML = '';
+        
+        // V2Ray mode special handling
+        const logArea = document.getElementById('logArea');
+        const mainHeaderActions = document.querySelector('.main-header div');
+        if (currentMode === 'v2ray' || currentMode === 'welcome') {
+            logArea.style.display = 'none';
+            if (mainHeaderActions) mainHeaderActions.style.display = 'none';
+        } else {
+            logArea.style.display = 'block';
+            if (mainHeaderActions) mainHeaderActions.style.display = 'flex';
+        }
+
+        section.render(panel);
+        if (currentMode !== 'welcome') {
+            const infoBtn = document.createElement('button');
+            infoBtn.className = 'secondary';
+            infoBtn.textContent = 'ℹ️ ' + (LANG === 'fa' ? 'توضیحات' : (LANG === 'finglish' ? 'Tozihat' : 'Info'));
+            infoBtn.style.marginTop = '12px';
+            infoBtn.onclick = function () { showInfo(currentSection); };
+            panel.appendChild(infoBtn);
+        }
+    }
+
+    async function renderV2RayPage(container) {
+        const t = texts[LANG];
+        container.innerHTML = `
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button onclick="showAddV2RayModal()">${t.addConfig}</button>
+                <button onclick="pasteV2RayConfig()" class="secondary">${t.pasteConfig}</button>
+                <button onclick="pingAllV2RayConfigs()" class="secondary">${t.pingAll}</button>
+            </div>
+            <div id="v2rayConfigList" style="display:flex; flex-direction:column; gap:10px;">
+                <p>${t.noConfig}</p>
+            </div>
+        `;
+        loadV2RayConfigs();
+    }
+
+    async function loadV2RayConfigs() {
+        const r = await fetch('/api/v2ray/list');
+        const configs = await r.json();
+        const list = document.getElementById('v2rayConfigList');
+        if (!list) return;
+        
+        if (!configs || configs.length === 0) {
+            list.innerHTML = `<p>${texts[LANG].noConfig}</p>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        configs.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'form-row';
+            div.style.background = 'var(--sidebar)';
+            div.style.padding = '10px';
+            div.style.borderRadius = '4px';
+            div.style.justifyContent = 'space-between';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="badge gray" id="pingBadge_${c.ID}"></span>
+                    <span style="font-weight:bold;">${c.Name || 'Unnamed'}</span>
+                    <span style="font-size:11px; color:var(--subtext); background:var(--bg); padding:2px 6px; border-radius:10px;">${c.Type}</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="connectV2Ray('${c.ID}')" style="padding:4px 8px; font-size:12px;">${texts[LANG].connect}</button>
+                    <button onclick="pingV2Ray('${c.ID}', '${c.Content}')" class="secondary" style="padding:4px 8px; font-size:12px;">${texts[LANG].ping}</button>
+                    <button onclick="deleteV2Ray('${c.ID}')" class="danger" style="padding:4px 8px; font-size:12px;">✕</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    async function showAddV2RayModal() {
+        const name = prompt("Enter configuration name:");
+        if (!name) return;
+        const type = prompt("Enter type (v2ray, shadowsocks, npvt, etc.):");
+        if (!type) return;
+        const content = prompt("Enter address or config content:");
+        if (!content) return;
+        
+        await fetch('/api/v2ray/add', {
+            method: 'POST',
+            body: JSON.stringify({ Name: name, Type: type, Content: content })
+        });
+        loadV2RayConfigs();
+    }
+
+    async function pasteV2RayConfig() {
+        const text = await navigator.clipboard.readText();
+        if (!text) return;
+        // Simple heuristic for type
+        let type = 'v2ray';
+        if (text.startsWith('ss://')) type = 'shadowsocks';
+        else if (text.startsWith('vmess://')) type = 'v2ray';
+        else if (text.startsWith('npvt://')) type = 'npvt';
+        
+        await fetch('/api/v2ray/add', {
+            method: 'POST',
+            body: JSON.stringify({ Name: 'Pasted Config', Type: type, Content: text })
+        });
+        loadV2RayConfigs();
+    }
+
+    async function pingV2Ray(id, address) {
+        const badge = document.getElementById(`pingBadge_${id}`);
+        if (badge) badge.style.background = 'gray';
+        
+        // Extract host:port from content if it's a URL
+        let addr = address;
+        try {
+            if (address.includes('://')) {
+                const url = new URL(address);
+                addr = url.host;
+                if (!addr.includes(':')) addr += ':443';
+            }
+        } catch(e) {}
+
+        const r = await fetch(`/api/v2ray/ping?address=${encodeURIComponent(addr)}`);
+        const data = await r.json();
+        if (badge) {
+            if (data.status === 'ok') {
+                badge.style.background = 'var(--success)';
+                badge.title = `${data.ping} ms`;
+            } else {
+                badge.style.background = 'var(--danger)';
+            }
+        }
+    }
+
+    async function pingAllV2RayConfigs() {
+        const r = await fetch('/api/v2ray/list');
+        const configs = await r.json();
+        configs.forEach(c => pingV2Ray(c.ID, c.Content));
+    }
+
+    async function deleteV2Ray(id) {
+        if (!confirm("Are you sure?")) return;
+        await fetch(`/api/v2ray/delete?id=${id}`);
+        loadV2RayConfigs();
+    }
+
+    async function connectV2Ray(id) {
+        appendLog(`[V2Ray] Connecting to config ${id}...\n`);
+        const r = await fetch(`/api/v2ray/connect?id=${id}`, { method: 'POST' });
+        if (r.ok) {
+            appendLog(`[V2Ray] Connection initiated.\n`);
+            updateStatusDisplay();
+        } else {
+            const err = await r.text();
+            appendLog(`[V2Ray] Connection failed: ${err}\n`);
+        }
+    }
+
+    function showInfo(sectionKey) {
+        const modeObj = getModeSections(currentMode);
+        if (!modeObj || !modeObj.sections) return;
+        const section = modeObj.sections[sectionKey];
+        if (!section) return;
+        const overlay = document.getElementById('infoOverlay');
+        document.getElementById('infoTitle').textContent = section.name;
+        document.getElementById('infoBody').textContent = section.info || '';
+        overlay.classList.add('active');
+        overlay.style.display = 'flex';
+    }
+
+    function closeInfo() {
+        const overlay = document.getElementById('infoOverlay');
+        overlay.classList.remove('active');
+        overlay.style.display = '';
+    }
+
+    // ========== WELCOME RENDERERS ==========
+    function renderWelcome(container) { container.innerHTML += `<p>${texts[LANG].welcomeDesc}</p>`; }
+    function renderFeatures(container) { container.innerHTML += `<pre style="white-space:pre-wrap;font-size:13px;line-height:1.6;">${texts[LANG].featuresDesc}</pre>`; }
+    function renderGettingStarted(container) {
+        container.innerHTML += `<pre style="white-space:pre-wrap;font-size:13px;line-height:1.6;">${texts[LANG].gettingStartedDesc}</pre>
+        <button onclick="window.open('https://script.google.com','_blank')" class="secondary">🔗 ${texts[LANG].openScriptSite}</button>`;
+    }
+    function renderYoutubeHelp(container) { container.innerHTML += `<p>${texts[LANG].youtubeHelpDesc}</p>`; }
+    function renderAboutApp(container) { container.innerHTML += `<p>${texts[LANG].aboutAppDesc}</p>`; }
+
+    // ========== OTHER RENDERERS (unchanged) ==========
+    function renderGeneralSettings(container) {
+        container.innerHTML += `
+        <div class="form-row"><label>${texts[LANG].googleIP}</label>
+          <div style="display:flex; flex:1; gap:8px;">
+            <input type="text" id="generalGoogleIP" value="${config.GoogleIP || '216.239.38.120'}" style="flex:1;">
+            <button onclick="scanIPs()" class="secondary">🔍 ${texts[LANG].scan}</button>
+          </div>
+        </div>
+        <div class="form-row"><label>${texts[LANG].frontDomain}</label><input type="text" id="generalFrontDomain" value="${config.FrontDomain || 'www.google.com'}"></div>
+        <div class="form-row"><label>${texts[LANG].listenHost}</label><input type="text" id="generalListenHost" value="${config.ListenHost || '127.0.0.1'}"></div>
+        <div class="form-row"><label>${texts[LANG].httpPort}</label><input type="number" id="generalPort" value="${config.ListenPort || 8085}" style="width:100px;"></div>
+        <button onclick="saveCurrentConfig()" style="margin-top:10px;">💾 ${texts[LANG].save}</button>
+        `;
+    }
+
+    function renderAdvancedOptions(container) {
+        container.innerHTML += `
+        <div class="form-row"><input type="checkbox" id="advAntiBan" ${config.AntiBan ? 'checked' : ''}><label>Smart Anti-Ban</label></div>
+        <div class="form-row"><input type="checkbox" id="advForceRelayYouTube" ${config.ForceRelayYouTube ? 'checked' : ''}><label>Force YouTube via relay</label></div>
+        <div class="form-row"><input type="checkbox" id="advLAN" ${config.LanSharing ? 'checked' : ''}><label>Allow LAN (0.0.0.0)</label></div>
+        <div class="form-row"><input type="checkbox" id="advPerf" ${config.PerformanceMode ? 'checked' : ''}><label>Performance Mode</label></div>
+        <div class="form-row"><label>Direct Hosts:</label><textarea id="advDirectHosts" rows="2" style="flex:1;">${(config.CustomDirectHosts || []).join('\n')}</textarea></div>
+        <button onclick="saveCurrentConfig()" style="margin-top:10px;">💾 ${texts[LANG].save}</button>
+        `;
+    }
+
+    function renderLogSettings(container) {
+        container.innerHTML += `
+        <div class="form-row">
+          <label>${texts[LANG].logLevelSetting}:</label>
+          <select id="logLevelSettingSelect" onchange="updateLogLevelSetting(this.value)">
+            <option value="Low" ${config.LogLevelSetting === 'Low' ? 'selected' : ''}>${texts[LANG].low}</option>
+            <option value="Normal" ${config.LogLevelSetting === 'Normal' ? 'selected' : ''}>${texts[LANG].normal}</option>
+            <option value="High" ${config.LogLevelSetting === 'High' ? 'selected' : ''}>${texts[LANG].high}</option>
+            <option value="Unlimited" ${config.LogLevelSetting === 'Unlimited' ? 'selected' : ''}>${texts[LANG].unlimited}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>${texts[LANG].logLimit}:</label>
+          <input type="number" id="logLimitInput" value="${config.LogLimitChars || 15000}" style="width:100px;">
+        </div>
+        <button onclick="saveCurrentConfig()" style="margin-top:10px;">💾 ${texts[LANG].save}</button>
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+        <div class="form-row">
+          <label>${texts[LANG].logLevel} (API):</label>
+          <select id="logLevelSelect" onchange="updateLogLevel(this.value)">
+            <option value="DEBUG" ${uiSettings.logLevel === 'DEBUG' ? 'selected' : ''}>DEBUG</option>
+            <option value="INFO" ${uiSettings.logLevel === 'INFO' ? 'selected' : ''}>INFO</option>
+            <option value="WARNING" ${uiSettings.logLevel === 'WARNING' ? 'selected' : ''}>WARNING</option>
+            <option value="ERROR" ${uiSettings.logLevel === 'ERROR' ? 'selected' : ''}>ERROR</option>
+          </select>
+        </div>
+        `;
+    }
+
+    function renderAccounts(container) {
+        if (config.Accounts && config.Accounts.length > 0) {
+            accounts = JSON.parse(JSON.stringify(config.Accounts));
+        } else {
+            accounts = [{AuthKey: config.AuthKey || '', ScriptIDs: config.ScriptIDs || ['']}];
+        }
+        container.innerHTML += `
+        <div class="form-row">
+          <input type="checkbox" id="multiAccountCheck" ${config.Accounts && config.Accounts.length > 0 ? 'checked' : ''} onchange="toggleMultiAccount(this.checked)">
+          <label>${texts[LANG].multiAccount}</label>
+        </div>
+        <div id="multiAccountContainer" class="account-container"></div>
+        <div style="margin-top:10px;">
+          <button onclick="saveCurrentConfig()">💾 ${texts[LANG].save}</button>
+          <button onclick="checkAccountHealth()" class="secondary">🔍 ${texts[LANG].healthCheck}</button>
+          <button onclick="copyCode('script')" class="secondary">📋 ${texts[LANG].copyGS}</button>
+        </div>
+        <div id="healthResult" style="margin-top:8px;"></div>
+        `;
+        renderMultiAccountContainer();
+    }
+
+    function toggleMultiAccount(checked) {
+        accounts = [];
+        if (!checked) {
+            accounts.push({AuthKey: config.AuthKey || '', ScriptIDs: config.ScriptIDs || ['']});
+        } else {
+            accounts.push({AuthKey: '', ScriptIDs: ['']});
+        }
+        renderMultiAccountContainer();
+    }
+
+    function renderMultiAccountContainer() {
+        const container = document.getElementById('multiAccountContainer');
+        if (!container) return;
+        const multiCheck = document.getElementById('multiAccountCheck');
+        const isMulti = multiCheck ? multiCheck.checked : false;
+        let html = '';
+        accounts.forEach((acc, idx) => {
+            html += `
+            <div style="border:1px solid var(--border); border-radius:4px; padding:10px; margin-bottom:8px;">
+              <div class="form-row">
+                <label>${texts[LANG].authKey}</label>
+                <input type="password" id="accAuthKey${idx}" value="${acc.AuthKey}" style="flex:1;" oninput="accounts[${idx}].AuthKey = this.value">
+                <button class="show-hide-btn" onclick="toggleAuthVisibility(event, 'accAuthKey${idx}')">👁</button>
+              </div>
+              <div><label>Script IDs:</label></div>
+              ${acc.ScriptIDs.map((id, idIdx) => `
+                <div class="form-row">
+                  <label>ID ${idIdx + 1}:</label>
+                  <input type="text" id="accID${idx}_${idIdx}" value="${id}" style="flex:1;" oninput="accounts[${idx}].ScriptIDs[${idIdx}] = this.value">
+                  <span class="badge gray"></span>
+                  ${acc.ScriptIDs.length > 1 ? `<button onclick="removeScriptId(${idx}, ${idIdx})" class="danger" style="padding:2px 8px; font-size:12px;">✕</button>` : ''}
+                </div>
+              `).join('')}
+              <div style="display:flex; gap:6px;">
+                <button onclick="addScriptId(${idx})" class="secondary">${texts[LANG].addID}</button>
+                ${isMulti && accounts.length > 1 ? `<button onclick="removeAccount(${idx})" class="danger">${texts[LANG].removeAccount}</button>` : ''}
+              </div>
+            </div>
+          `;
+        });
+        if (isMulti) {
+            html += `<button onclick="addAccount()" class="secondary">${texts[LANG].addAccount}</button>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function toggleAuthVisibility(e, fieldId) {
+        const input = document.getElementById(fieldId);
+        if (input) input.type = input.type === 'password' ? 'text' : 'password';
+        e.stopPropagation();
+    }
+
+    function addAccount() { accounts.push({AuthKey: '', ScriptIDs: ['']}); renderMultiAccountContainer(); }
+    function removeAccount(idx) { accounts.splice(idx, 1); renderMultiAccountContainer(); }
+    function addScriptId(accIdx) { accounts[accIdx].ScriptIDs.push(''); renderMultiAccountContainer(); }
+    function removeScriptId(accIdx, idIdx) {
+        if (accounts[accIdx].ScriptIDs.length > 1) {
+            accounts[accIdx].ScriptIDs.splice(idIdx, 1);
+            renderMultiAccountContainer();
+        }
+    }
+
+    function renderFrontingGroups(container) {
+        container.innerHTML += `<textarea id="fgJSON" rows="5" style="width:100%;">${JSON.stringify(config.FrontingGroups || [], null, 2)}</textarea>
+        <button onclick="saveCurrentConfig()" style="margin-top:10px;">💾 ${texts[LANG].save}</button>`;
+    }
+
+    function renderWorkerConfig(container) {
+        container.innerHTML += `
+        <div class="form-row"><input type="checkbox" id="workerEnabled" ${config.WorkerEnabled ? 'checked' : ''}><label>Enable Worker</label></div>
+        <div class="form-row"><label>Worker URL:</label><input type="text" id="workerURL" value="${config.WorkerURL || ''}"></div>
+        <div class="form-row"><label>Upstream Forwarder:</label><input type="text" id="upstreamURL" value="${config.UpstreamForwarderURL || ''}"></div>
+        <div class="form-row"><label>Upstream Auth:</label><input type="password" id="upstreamAuth" value="${config.UpstreamAuthKey || ''}"></div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button onclick="saveCurrentConfig()">💾 ${texts[LANG].save}</button>
+          <button onclick="copyCode('worker')" class="secondary">📋 ${texts[LANG].copyWorker}</button>
+        </div>`;
+    }
+
+    function renderExitNode(container) {
+        const en = config.ExitNode || {};
+        container.innerHTML += `
+        <div class="form-row"><input type="checkbox" id="exitEnabled" ${en.Enabled ? 'checked' : ''}><label>Enable Exit Node</label></div>
+        <div class="form-row"><label>Relay URL:</label><input type="text" id="exitURL" value="${en.RelayURL || ''}"></div>
+        <div class="form-row"><label>PSK:</label><input type="password" id="exitPSK" value="${en.PSK || ''}"></div>
+        <div class="form-row"><label>Hosts:</label><textarea id="exitHosts" rows="3" style="flex:1;">${(en.Hosts || []).join('\n')}</textarea></div>
+        <button onclick="saveCurrentConfig()" style="margin-top:10px;">💾 ${texts[LANG].save}</button>`;
+    }
+
+    function renderAppearance(container) {
+        container.innerHTML += `<div class="form-row"><label>${texts[LANG].themeLabel}</label>
+          <button onclick="toggleTheme()">${darkTheme ? texts[LANG].lightTheme : texts[LANG].darkTheme}</button></div>`;
+    }
+
+    function renderLanguage(container) {
+        container.innerHTML += `<div class="form-row"><label>${texts[LANG].language}:</label>
+          <select id="langSelect" onchange="changeLanguage(this.value)">
+            <option value="fa" ${LANG === 'fa' ? 'selected' : ''}>فارسی</option>
+            <option value="finglish" ${LANG === 'finglish' ? 'selected' : ''}>Finglish</option>
+            <option value="en" ${LANG === 'en' ? 'selected' : ''}>English</option>
+          </select></div>`;
+    }
+
+    function renderCASection(container) {
+        container.innerHTML += `
+        <div style="margin-bottom:12px;">
+          <span id="caStatusText">${texts[LANG].checkCAStatus} ...</span>
+          <span class="badge" id="caStatusDot" style="background:gray; margin-left:8px;"></span>
+        </div>
+        <button onclick="checkCAStatus()" class="secondary">${texts[LANG].checkCAStatus}</button>
+        <button onclick="installCA()" class="primary" style="margin-left:8px;">${texts[LANG].installCA}</button>`;
+        checkCAStatus();
+    }
+
+    async function checkCAStatus() {
+        try {
+            const r = await fetch('/api/ca/status');
+            const data = await r.json();
+            const installed = data.installed;
+            document.getElementById('caStatusDot').style.background = installed ? 'var(--success)' : 'var(--danger)';
+            document.getElementById('caStatusText').textContent = installed ? texts[LANG].caInstalled : texts[LANG].caNotInstalled;
+        } catch (e) {}
+    }
+
+    async function installCA() {
+        try {
+            const r = await fetch('/api/ca/install');
+            const data = await r.json();
+            if (data.status === 'ok') {
+                appendLog('✅ ' + texts[LANG].caInstallSuccess + '\n');
+                checkCAStatus();
+            } else {
+                appendLog('❌ Install failed: ' + (data.message || '') + '\n');
+            }
+        } catch (e) { appendLog('❌ Install error: ' + e + '\n'); }
+    }
+
+    function renderAbout(container) {
+        container.innerHTML += `<p>MihaniRelay</p><p>${LANG === 'fa' ? 'ساخته شده توسط' : 'Made by'} <b>Faz Pad Studio</b></p>`;
+    }
+
+    // ========== GITHUB RENDERER ==========
+    async function renderGitHubSection(container) {
+        container.innerHTML = "";
+        const t = texts[LANG];
+
+        // ورودی‌های Client ID و Secret
+        const configDiv = document.createElement("div");
+        configDiv.innerHTML = `
+            <div class="form-row">
+                <label>Client ID</label>
+                <input type="text" id="githubClientID" value="${config.GitHub.ClientID || ''}" style="flex:1;">
+            </div>
+            <div class="form-row">
+                <label>Client Secret</label>
+                <input type="password" id="githubClientSecret" value="${config.GitHub.ClientSecret || ''}" style="flex:1;">
+                <button class="show-hide-btn" onclick="toggleAuthVisibility(event, 'githubClientSecret')">👁</button>
+            </div>
+            <button onclick="saveCurrentConfig()" style="margin-bottom:15px;">💾 ${t.save}</button>
+            <hr style="border:0; border-top:1px solid var(--border); margin-bottom:15px;">
+        `;
+        container.appendChild(configDiv);
+
+        // دریافت وضعیت فعلی از سرور
+        let state = { authenticated: false, username: '', forked: false, status: 'idle', codespace: {} };
+        try {
+            const r = await fetch('/api/github/status');
+            state = await r.json();
+        } catch(e) {}
+
+        // ورود/خروج و اطلاعات
+        const authDiv = document.createElement("div");
+        authDiv.className = "form-row";
+        authDiv.style.justifyContent = "flex-start";
+        authDiv.style.gap = "10px";
+
+        if (state.authenticated) {
+            const userSpan = document.createElement("span");
+            userSpan.textContent = `${state.username} (✔)`;
+            userSpan.style.marginRight = "10px";
+            authDiv.appendChild(userSpan);
+
+            const logoutBtn = document.createElement("button");
+            logoutBtn.className = "secondary";
+            logoutBtn.textContent = t.githubLogout;
+            logoutBtn.onclick = async () => { 
+                await fetch('/api/github/logout'); 
+                renderGitHubSection(container); 
+            };
+            authDiv.appendChild(logoutBtn);
+        } else {
+            const loginBtn = document.createElement("button");
+            loginBtn.textContent = t.githubLogin;
+            loginBtn.onclick = async () => {
+                window.open('/api/github/login', '_blank');
+                setTimeout(() => renderGitHubSection(container), 5000);
+            };
+            authDiv.appendChild(loginBtn);
+        }
+
+        container.appendChild(authDiv);
+
+        if (!state.authenticated) return;
+
+        // عملیات (فورک، ساخت، توقف، حذف) در یک ردیف
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "form-row";
+        actionsDiv.style.flexWrap = "wrap";
+        actionsDiv.style.gap = "8px";
+
+        const forkBtn = document.createElement("button");
+        forkBtn.textContent = t.githubFork;
+        forkBtn.disabled = state.forked;
+        forkBtn.onclick = async () => {
+            appendLog("[GitHub] Forking repository...\n");
+            await fetch('/api/github/fork', { method: 'POST' });
+            renderGitHubSection(container);
+        };
+        actionsDiv.appendChild(forkBtn);
+
+        const createBtn = document.createElement("button");
+        createBtn.textContent = t.githubCreate;
+        createBtn.disabled = !state.forked || state.status === 'creating' || state.status === 'ready';
+        createBtn.onclick = async () => {
+            appendLog("[GitHub] Creating Codespace...\n");
+            await fetch('/api/github/create', { method: 'POST' });
+            renderGitHubSection(container);
+            pollGitHubStatus();
+        };
+        actionsDiv.appendChild(createBtn);
+
+        if (state.codespace && state.codespace.status === 'ready') {
+            const stopBtn = document.createElement("button");
+            stopBtn.className = "secondary";
+            stopBtn.textContent = t.githubStop;
+            stopBtn.onclick = async () => { 
+                await fetch('/api/github/stop', { method: 'POST' }); 
+                renderGitHubSection(container); 
+            };
+            actionsDiv.appendChild(stopBtn);
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "danger";
+            delBtn.textContent = t.githubDelete;
+            delBtn.onclick = async () => { 
+                await fetch('/api/github/delete', { method: 'POST' }); 
+                renderGitHubSection(container); 
+            };
+            actionsDiv.appendChild(delBtn);
+        }
+        container.appendChild(actionsDiv);
+
+        // نمایش VLESS
+        if (state.codespace && state.codespace.vless) {
+            const vlessDiv = document.createElement("div");
+            vlessDiv.innerHTML = `<label>${t.githubVless}:</label><code>${state.codespace.vless}</code>`;
+            container.appendChild(vlessDiv);
+        }
+
+        // شروع/توقف Xray (اتصال)
+        const xrayDiv = document.createElement("div");
+        xrayDiv.className = "form-row";
+        const startXrayBtn = document.createElement("button");
+        startXrayBtn.textContent = t.githubXrayStart;
+        startXrayBtn.onclick = async () => {
+            appendLog("[Xray] Starting...\n");
+            await fetch('/api/xray/start', { method: 'POST' });
+            config.Mode = 'github';
+            await fetch('/api/config/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(config) });
+            await fetch('/api/start');
+            updateStatusDisplay();
+        };
+        xrayDiv.appendChild(startXrayBtn);
+        const stopXrayBtn = document.createElement("button");
+        stopXrayBtn.textContent = t.githubXrayStop;
+        stopXrayBtn.onclick = async () => {
+            await fetch('/api/xray/stop', { method: 'POST' });
+            if (proxyRunning) await fetch('/api/stop');
+            updateStatusDisplay();
+        };
+        xrayDiv.appendChild(stopXrayBtn);
+        container.appendChild(xrayDiv);
+
+        // خطا
+        if (state.lastError) {
+            const errDiv = document.createElement("div");
+            errDiv.style.color = 'var(--danger)';
+            errDiv.textContent = 'Error: ' + state.lastError;
+            container.appendChild(errDiv);
+        }
+    }
+
+    async function pollGitHubStatus() {
+        const box = document.getElementById("ghStatusBox");
+        if (!box) return;
+        for (let i = 0; i < 60; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            // آپدیت وضعیت با فراخوانی مجدد renderGitHubSection (که خودش وضعیت را می‌گیرد)
+            // ولی برای جلوگیری از لوپ، از یک تابع جداگانه استفاده می‌کنیم
+            try {
+                const r = await fetch('/api/github/status');
+                const s = await r.json();
+                box.dataset.status = s.status || "idle";
+                // نمایش VLESS و غیره
+                renderGitHubStatus(box);
+                if (s.status === 'ready' || s.status === 'error') break;
+            } catch(e) {}
+        }
+    }
+
+    async function renderGitHubStatus(box) {
+        try {
+            const r = await fetch('/api/github/status');
+            const s = await r.json();
+            box.dataset.status = s.status || "idle";
+            const t = texts[LANG];
+            let html = "<div class='form-row'><label>" + t.githubStatus + ":</label><div>" + (s.status || "idle") + "</div></div>";
+            if (s.codespace && s.codespace.name) {
+                html += "<div class='form-row'><label>Codespace:</label><div>" + s.codespace.name + "</div></div>";
+            }
+            if (s.codespace && s.codespace.vless) {
+                html += "<div class='form-row'><label>" + t.githubVless + ":</label><div style='word-break:break-all'><code>" + s.codespace.vless + "</code></div></div>";
+            }
+            if (s.codespace && s.codespace.webUrl) {
+                html += "<div class='form-row'><label></label><div><button class='secondary' onclick='window.open(\"" + s.codespace.webUrl + "\",\"_blank\")'>" + t.githubOpen + "</button></div></div>";
+            }
+            if (s.lastError) {
+                html += "<div class='form-row'><label>Error:</label><div style='color: var(--danger)'>" + s.lastError + "</div></div>";
+            }
+            box.innerHTML = html;
+        } catch(e) {
+            box.innerHTML = "<p style='color:var(--danger)'>Failed to load status.</p>";
+        }
+    }
+
+    // ========== ACTIONS ==========
+    async function startProxy() { await saveCurrentConfig(); await fetch('/api/start'); }
+    async function stopProxy() { await fetch('/api/stop'); }
+
+    async function scanIPs() {
+        appendLog('🔍 Scanning IPs...\n');
+        const r = await fetch('/api/scan');
+        const results = await r.json();
+        let best = null;
+        results.forEach(x => {
+            appendLog(`  ${x.ip} → ${x.ping} ms${x.error ? ' ERR' : ''}\n`);
+            if (!x.error && parseFloat(x.ping) > 0 && (!best || parseFloat(x.ping) < parseFloat(best.ping))) best = x;
+        });
+        if (best) {
+            document.getElementById('generalGoogleIP').value = best.ip;
+            appendLog(`✅ Best IP: ${best.ip} (${best.ping} ms)\n`);
+        }
+    }
+
+    async function checkAccountHealth() {
+        const ids = [];
+        accounts.forEach(acc => {
+            (acc.ScriptIDs || []).forEach(id => { if (id && id.trim()) ids.push({id: id.trim(), key: acc.AuthKey}); });
+        });
+        if (!ids.length) { appendLog('No IDs to check.\n'); return; }
+        appendLog('🔍 Health check...\n');
+        let html = '';
+        for (const item of ids) {
+            try {
+                const r = await fetch(`/api/health?id=${encodeURIComponent(item.id)}&key=${encodeURIComponent(item.key || config.AuthKey)}`);
+                const d = await r.json();
+                if (d.ok) {
+                    html += `<span style="color:var(--success);">🟢</span> ${item.id.slice(0,12)}... : ${texts[LANG].healthSuccess} | ${texts[LANG].responseTime}: ${d.ping_ms} ms | ${texts[LANG].statusCode}: ${d.status} | ${texts[LANG].targetIP}: ${d.target_ip||'?'}<br>`;
+                    appendLog('✅ ' + item.id.slice(0,12) + '... OK ('+d.ping_ms+' ms, IP '+d.target_ip+')\n');
+                } else {
+                    html += `<span style="color:var(--danger);">🔴</span> ${item.id.slice(0,12)}... : ${texts[LANG].healthFail} – ${d.error||'Unknown error'}<br>`;
+                    appendLog('❌ ' + item.id.slice(0,12) + '... FAIL: '+(d.error||'') + '\n');
+                }
+            } catch(e) {
+                html += `<span style="color:var(--danger);">🔴</span> ${item.id.slice(0,12)}... : Network error<br>`;
+                appendLog('🔴 Network error for ' + item.id.slice(0,12) + '\n');
+            }
+        }
+        document.getElementById('healthResult').innerHTML = html;
+        setTimeout(() => { document.getElementById('healthResult').innerHTML = ''; }, 4000);
+    }
+
+    async function copyCode(type) {
+        const url = type==='worker' ? '/api/code/worker' : '/api/code/script';
+        const resp = await fetch(url);
+        const text = await resp.text();
+        await navigator.clipboard.writeText(text);
+        appendLog('✅ Copied to clipboard\n');
+    }
+
+    async function toggleSystemProxy(enable) {
+        systemProxyOn = enable;
+        const url = '/api/set-proxy?enable=' + enable;
+        const r = await fetch(url);
+        const d = await r.json();
+        appendLog((enable ? '✅ Proxy set: ' : '✅ Proxy removed: ') + d.status + '\n');
+    }
+
+    function toggleTheme() {
+        darkTheme = !darkTheme;
+        document.body.setAttribute('data-theme', darkTheme ? 'dark' : 'light');
+        saveUISettings();
+        renderContent();
+    }
+
+    function changeLanguage(lang) {
+        localStorage.setItem('lang', lang);
+        LANG = lang;
+        if (lang === 'fa') {
+            document.documentElement.setAttribute('dir', 'rtl');
+            document.documentElement.setAttribute('lang', 'fa');
+        } else {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.documentElement.setAttribute('lang', lang);
+        }
+        saveUISettings();
+        location.reload();
+    }
+
+    function updateLogLevel(level) {
+        uiSettings.logLevel = level;
+        saveUISettings();
+    }
+
+    function updateLogLevelSetting(level) {
+        config.LogLevelSetting = level;
+    }
+
+    // ========== CONFIG HELPERS ==========
+    async function loadConfig() {
+        const mode = currentMode === 'settings' ? 'apps_script' : currentMode;
+        const r = await fetch('/api/config/load?mode=' + mode);
+        if (!r.ok) throw new Error('Failed to load config');
+        config = await r.json();
+        config = Object.assign({
+            GoogleIP:'216.239.38.120', FrontDomain:'www.google.com', ListenHost:'127.0.0.1',
+            ListenPort:8085, Socks5Port:1080, LogLevel:'INFO', AuthKey:'', ScriptID:'',
+            Mode:'apps_script', VerifySSL:true, AntiBan:false, ForceRelayYouTube:false,
+            LanSharing:false, PerformanceMode:false, HealthInterval:5, CustomDirectHosts:[],
+            FrontingGroups:[], ExitNode:{Enabled:false,RelayURL:'',PSK:'',Hosts:[],Mode:'selective'},
+            Accounts:[], WorkerURL:'', WorkerEnabled:false, UpstreamForwarderURL:'', UpstreamAuthKey:'',
+            LogLimitChars:15000, LogLevelSetting:'Normal',
+            GitHub:{Enabled:false,Token:'',RepoOwner:'amiremohamadi',RepoName:'g2ray',Branch:'main',Machine:'standardLinux2x4'},
+            Xray:{Port:10808, BinPath:''}
+        }, config);
+        if (config.Accounts && config.Accounts.length > 0) {
+            accounts = JSON.parse(JSON.stringify(config.Accounts));
+        } else {
+            accounts = [{AuthKey: config.AuthKey||'', ScriptIDs: config.ScriptIDs||['']}];
+        }
+    }
+
+    function syncConfigFromDOM() {
+        if (document.getElementById('generalGoogleIP')) config.GoogleIP = document.getElementById('generalGoogleIP').value;
+        if (document.getElementById('generalFrontDomain')) config.FrontDomain = document.getElementById('generalFrontDomain').value;
+        if (document.getElementById('generalListenHost')) config.ListenHost = document.getElementById('generalListenHost').value;
+        if (document.getElementById('generalPort')) config.ListenPort = parseInt(document.getElementById('generalPort').value) || 8085;
+        if (document.getElementById('advAntiBan')) config.AntiBan = document.getElementById('advAntiBan').checked;
+        if (document.getElementById('advForceRelayYouTube')) config.ForceRelayYouTube = document.getElementById('advForceRelayYouTube').checked;
+        if (document.getElementById('advLAN')) config.LanSharing = document.getElementById('advLAN').checked;
+        if (document.getElementById('advPerf')) config.PerformanceMode = document.getElementById('advPerf').checked;
+        if (document.getElementById('advDirectHosts')) config.CustomDirectHosts = document.getElementById('advDirectHosts').value.split('\n').filter(Boolean);
+
+        const multiCheck = document.getElementById('multiAccountCheck')?.checked;
+        if (multiCheck) {
+            config.Accounts = accounts.filter(acc => acc.AuthKey || (acc.ScriptIDs || []).some(id => id.trim()));
+            if (config.Accounts.length === 0) config.Accounts = undefined;
+        } else {
+            config.Accounts = undefined;
+            if (accounts.length > 0) {
+                config.AuthKey = accounts[0].AuthKey;
+                config.ScriptIDs = accounts[0].ScriptIDs.filter(id => id.trim());
+                config.ScriptID = config.ScriptIDs.length > 0 ? config.ScriptIDs[0] : '';
+            }
+        }
+
+        if (document.getElementById('workerEnabled')) config.WorkerEnabled = document.getElementById('workerEnabled').checked;
+        if (document.getElementById('workerURL')) config.WorkerURL = document.getElementById('workerURL').value;
+        if (document.getElementById('upstreamURL')) config.UpstreamForwarderURL = document.getElementById('upstreamURL').value;
+        if (document.getElementById('upstreamAuth')) config.UpstreamAuthKey = document.getElementById('upstreamAuth').value;
+
+        const en = {
+            Enabled: document.getElementById('exitEnabled')?.checked || false,
+            RelayURL: document.getElementById('exitURL')?.value || '',
+            PSK: document.getElementById('exitPSK')?.value || '',
+            Hosts: (document.getElementById('exitHosts')?.value || '').split('\n').filter(Boolean),
+            Mode: 'selective'
+        };
+        if (en.Enabled || en.RelayURL) config.ExitNode = en;
+
+        try { if (document.getElementById('fgJSON')) config.FrontingGroups = JSON.parse(document.getElementById('fgJSON').value || '[]'); } catch (e) {}
+
+        if (document.getElementById('githubClientID')) config.GitHub.ClientID = document.getElementById('githubClientID').value;
+        if (document.getElementById('githubClientSecret')) config.GitHub.ClientSecret = document.getElementById('githubClientSecret').value;
+
+        if (document.getElementById('logLimitInput')) config.LogLimitChars = parseInt(document.getElementById('logLimitInput').value) || 15000;
+        if (document.getElementById('logLevelSettingSelect')) config.LogLevelSetting = document.getElementById('logLevelSettingSelect').value;
+    }
+
+    async function saveCurrentConfig() {
+        syncConfigFromDOM();
+        config.Mode = currentMode === 'settings' ? 'apps_script' : currentMode;
+        await fetch('/api/config/save', { method:'POST', headers: {'Content-Type':'application/json'}, body:JSON.stringify(config) });
+        appendLog('✅ Configuration saved.\n');
+    }
+
+    // Stats polling
+    setInterval(async () => {
+        try {
+            const r = await fetch('/api/stats');
+            const s = await r.json();
+            document.getElementById('reqCount').textContent = s.requests || 0;
+            document.getElementById('activeCount').textContent = s.active || 0;
+            document.getElementById('byteCount').textContent = formatBytes(s.bytes || 0);
+        } catch (e) {}
+    }, 2000);
+
+    function formatBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(1) + ' MB';
+    }
+</script>
+</body>
+</html>
